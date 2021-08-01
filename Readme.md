@@ -47,10 +47,11 @@ Add the following entry into the `/storage/roms/ports/gamelist.xml` file:
 - [ ] Link with SDL2
 - [ ] Make it use SDL2 to write "Hello, world!" on the screen
 - [ ] Play sound
-- [ ] Move some sprite,  by controls
-- [ ] Rotate vibration motor
-- [ ] Display picture with controls mapping
+- [ ] Move a sprite around by pressing cross buttons and touching L2/L3 sticks
+- [ ] Rotate vibration motor by pressing A
+- [ ] Display picture with controls mapping and light up correspongin buttons
 
 ## Notes
+
 - Keep it a simple demo app. No complicated mechanics must be involved. It must not be a game, it must be a features demo for port makers. It must be obvious where the app source code is, where build scripts are and 351elec system related stuff is.
 - Document and comment everything explicitly. Explain it like some noob begins his/her own journey to the world of programming and decided to start here. Or at least aspire to this level of detailing.
