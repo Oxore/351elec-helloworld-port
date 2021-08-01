@@ -66,6 +66,7 @@ Find "Demo App" in a list of ports on 351elec system. When it run a turquoise sc
 - [ ] Move a sprite around by pressing cross buttons and touching L2/L3 sticks
 - [ ] Rotate vibration motor by pressing A
 - [ ] Display picture with controls mapping and light up correspongin buttons
+- [ ] Create a package that is able to be installed in 351ELEC system
 
 ## Notes
 
