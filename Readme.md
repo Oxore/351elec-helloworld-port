@@ -17,7 +17,19 @@ export TOOLCHAIN_DIR=/home/oxore/build-pkgs/351ELEC/build.351ELEC-RG351P.aarch64
 make
 ```
 
-It is console application, so you must run it from the system shell. You can accessing the device shell via SSH.Making app runnable on device in graphics mode is work in progress.
+Or you can build it for the host machine to run on it. Then you should **not** use any toolchain, which usage is described above. Simply run:
+
+```
+make
+```
+
+If you already `export`ed toolchain path then you can clear `TOOLCHAIN_DIR` variable and run again:
+
+```
+make clean
+export TOOLCHAIN_DIR=
+make
+```
 
 ## Install
 
@@ -40,11 +52,15 @@ Add the following entry into the `/storage/roms/ports/gamelist.xml` file:
 
 ```
 
+## Run
+
+Find "Demo App" in a list of ports on 351elec system. When it run a turquoise screen is being shown for 5 seconds and then it terminates.
+
 ## Roadmap
 
 - [X] Build just C runtime console "printf("Hello, world!)" program with the toolchain and run on 351 via ssh.
 - [X] Let it be visible and runnable in the ports list.
-- [ ] Link with SDL2
+- [X] Link with SDL2
 - [ ] Make it use SDL2 to write "Hello, world!" on the screen
 - [ ] Play sound
 - [ ] Move a sprite around by pressing cross buttons and touching L2/L3 sticks
