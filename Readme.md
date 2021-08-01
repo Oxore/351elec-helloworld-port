@@ -17,14 +17,33 @@ export TOOLCHAIN_DIR=/home/oxore/build-pkgs/351ELEC/build.351ELEC-RG351P.aarch64
 make
 ```
 
+It is console application, so you must run it from the system shell. You can accessing the device shell via SSH.Making app runnable on device in graphics mode is work in progress.
+
+## Install
+
 Now you have the `main` file which can be copied to the device over SSH or by putting on SD card in a dedicated directory in `ports`, called, for example, `demo`. It must be on the `GAMES` microSD card partition and be mounted on the device under `/storage/roms` and have a symlink `/roms` pointing to `/storage/roms`. It is console application, so you must run it from the system shell. You can accessing the device shell via SSH.
 
-Making app runnable on device in graphics mod is work in progress.
+Create directory `/storage/roms/ports/demo`
+
+Copy file `DemoAppLauncher.sh` into `/storage/roms/ports` directory.
+
+Add the following entry into the `/storage/roms/ports/gamelist.xml` file:
+
+```
+	<game>
+		<path>./DemoAppLauncher.sh</path>
+		<name>Demo App</name>
+		<desc>Demo App description</desc>
+		<developer>You</developer>
+		<publisher>non-commercial</publisher>
+	</game>
+
+```
 
 ## Roadmap
 
 - [X] Build just C runtime console "printf("Hello, world!)" program with the toolchain and run on 351 via ssh.
-- [ ] Let it be visible and runnable in the ports list.
+- [X] Let it be visible and runnable in the ports list.
 - [ ] Link with SDL2
 - [ ] Make it use SDL2 to write "Hello, world!" on the screen
 - [ ] Play sound
