@@ -4,8 +4,8 @@
 
 init_port main alsa
 
-/storage/roms/ports/demo/main
-
+cd /storage/roms/ports/demo/
+./main >/tmp/logs/DemoApplication-$(date -Iseconds).log 2>&1
 ret_code=$?
 
 end_port

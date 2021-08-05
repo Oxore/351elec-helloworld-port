@@ -61,7 +61,7 @@ Find "Demo App" in a list of ports on 351elec system. When it run a turquoise sc
 - [X] Build just C runtime console "printf("Hello, world!)" program with the toolchain and run on 351 via ssh.
 - [X] Let it be visible and runnable in the ports list.
 - [X] Link with SDL2
-- [ ] Make it use SDL2 to write "Hello, world!" on the screen
+- [X] Make it use SDL2 to write "Hello, world!" on the screen
 - [ ] Play sound
 - [ ] Move a sprite around by pressing cross buttons and touching L2/L3 sticks
 - [ ] Rotate vibration motor by pressing A
