@@ -5,6 +5,10 @@
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
 
+// this is the color in rgb format,
+// maxing out all would give you the color white,
+// and it will be your text's color
+const SDL_Color black = {0, 0, 0, 0};
 
 Uint32 exit_timer_cb(Uint32 interval, void *param)
 {
@@ -28,6 +32,19 @@ Uint32 exit_timer_cb(Uint32 interval, void *param)
     return(interval);
 }
 
+void bake_message(
+        SDL_Renderer* renderer,
+        TTF_Font* font,
+        SDL_Surface** surface,
+        SDL_Texture** texture,
+        const char* text)
+{
+    SDL_FreeSurface(*surface);
+    SDL_DestroyTexture(*texture);
+    *surface = TTF_RenderText_Solid(font, text, black);
+    *texture = SDL_CreateTextureFromSurface(renderer, *surface);
+}
+
 // https://gist.github.com/fschr/92958222e35a823e738bb181fe045274
 int main(int argc, char * const argv[])
 {
@@ -36,7 +53,7 @@ int main(int argc, char * const argv[])
     printf("Hello, world!\n");
     SDL_Window* window = NULL;
     SDL_Renderer* renderer = NULL;
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0) {
         fprintf(stderr, "could not initialize sdl2: %s\n", SDL_GetError());
         return 0;
     }
@@ -51,6 +68,9 @@ int main(int argc, char * const argv[])
         return 0;
     }
 
+    // The object is not used but must be opened to have controller input events
+    SDL_Joystick* joystick = SDL_JoystickOpen(0);
+
     Uint32 delay_ms = 5 * 1000; // 5 Seconds
     SDL_TimerID my_timer_id = SDL_AddTimer(delay_ms, exit_timer_cb, NULL);
     (void) my_timer_id;
@@ -64,11 +84,6 @@ int main(int argc, char * const argv[])
         fprintf(stderr, "Failed to open font: %s\n", SDL_GetError());
         return 0;
     }
-
-    // this is the color in rgb format,
-    // maxing out all would give you the color white,
-    // and it will be your text's color
-    SDL_Color black = {0, 0, 0, 0};
 
     // as TTF_RenderText_Solid could only be used on
     // SDL_Surface then you have to create the surface first
@@ -100,23 +115,28 @@ int main(int argc, char * const argv[])
     SDL_Event event;
     while (1) {
         SDL_PollEvent(&event);
-        // Quit
         if (event.type == SDL_QUIT)
             break;
         if (event.type == SDL_USEREVENT && (intptr_t)event.user.data1 == 10)
             break;
+        if (event.type == SDL_JOYHATMOTION && event.jhat.value == SDL_HAT_UP) {
+            bake_message(renderer, font, &surfaceMessage, &message, "Up");
+            Message_rect.w = surfaceMessage->w;
+            Message_rect.h = surfaceMessage->h;
+        }
         SDL_Delay(10);
         SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
         SDL_RenderClear(renderer);
         SDL_RenderFillRect(renderer, &Message_rect);
         SDL_RenderCopy(renderer, message, NULL, &Message_rect);
         SDL_RenderPresent(renderer);
-        //SDL_UpdateWindowSurface(window);
     }
 
     // Don't forget to free your surface and texture
     SDL_FreeSurface(surfaceMessage);
     SDL_DestroyTexture(message);
+
+    SDL_JoystickClose(joystick);
 
     SDL_DestroyWindow(window);
     SDL_Quit();
