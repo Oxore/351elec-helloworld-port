@@ -2,6 +2,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <inttypes.h>
+#include <stdbool.h>
 
 // SDL_JOYBUTTONDOWN(0x603) and SDL_JOYBUTTONUP(0x604).
 // - Created when
@@ -19,33 +20,40 @@
 // - Tilt value is int16 and may be acquired from jaxis.value.
 // - Axis ID may be acquired from jaxis.axis.
 
-#define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 480
+#define SCREEN_WIDTH 480
+#define SCREEN_HEIGHT 320
 
 // this is the color in rgb format,
 // maxing out all would give you the color white,
 // and it will be your text's color
 const SDL_Color black = {0, 0, 0, 0};
 
+struct input_handl_ctx {
+    bool l3;
+    bool r3;
+};
+
+static inline void handle_input(
+        struct input_handl_ctx* in, const SDL_Event* event)
+{
+    if (event->type == SDL_JOYBUTTONDOWN || event->type == SDL_JOYBUTTONUP) {
+        bool pressed = event->type == SDL_JOYBUTTONDOWN;
+        if (event->jbutton.button == 0x08)
+            in->l3 = pressed;
+        else if (event->jbutton.button == 0x09)
+            in->r3 = pressed;
+    }
+}
+
+static inline bool is_exit_state(const struct input_handl_ctx* in)
+{
+    return in->l3 == in->r3 && in->l3 == true;
+}
+
 Uint32 exit_timer_cb(Uint32 interval, void *param)
 {
     (void) param;
-    SDL_Event event;
-    SDL_UserEvent userevent;
-
-    /* In this example, our callback pushes an SDL_USEREVENT event
-    into the queue, and causes our callback to be called again at the
-    same interval: */
-
-    userevent.type = SDL_USEREVENT;
-    userevent.code = 0;
-    userevent.data1 = (void *)10;
-    userevent.data2 = NULL;
-
-    event.type = SDL_USEREVENT;
-    event.user = userevent;
-
-    SDL_PushEvent(&event);
+    SDL_PushEvent(&(SDL_Event){ .type = SDL_QUIT });
     return interval;
 }
 
@@ -122,71 +130,65 @@ int main(int argc, char * const argv[])
 
     Uint32 delay_ms = 10 * 1000;
     SDL_TimerID my_timer_id = SDL_AddTimer(delay_ms, exit_timer_cb, NULL);
-    (void) my_timer_id;
 
     TTF_Init();
 
-    //this opens a font style and sets a size
-    TTF_Font* font = TTF_OpenFont("PixelEmulator-xq08.ttf", 12);
-    if (font == NULL)
-    {
+    // Open a font style with specific font size
+    TTF_Font* font = TTF_OpenFont("font-manaspc/manaspc.ttf", 12);
+    if (font == NULL) {
         fprintf(stderr, "Failed to open font: %s\n", SDL_GetError());
         return 0;
     }
 
-    // as TTF_RenderText_Solid could only be used on
+    // As TTF_RenderText_Solid could only be used on
     // SDL_Surface then you have to create the surface first
-    SDL_Surface* surfaceMessage =
+    SDL_Surface* message_surface =
         TTF_RenderText_Solid(font, "Hello, world!", black);
 
-    // now you can convert it into a texture
-    SDL_Texture* message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+    // Convert the surface into a texture
+    SDL_Texture* message =
+        SDL_CreateTextureFromSurface(renderer, message_surface);
 
-    SDL_Rect Message_rect; //create a rect
-    Message_rect.x = 100;  //controls the rect's x coordinate
-    Message_rect.y = 100; // controls the rect's y coordinte
-    Message_rect.w = surfaceMessage->w; // controls the width of the rect
-    Message_rect.h = surfaceMessage->h; // controls the height of the rect
+    // SDL_Rect is just a dimension parameter aggregation for render operation
+    SDL_Rect message_rect = {
+        .x = 100,
+        .y = 100,
+        .w = message_surface->w, // width of the rect
+        .h = message_surface->h, // height of the rect
+    };
 
-    // (0,0) is on the top left of the window/screen,
-    // think a rect as the text's box,
-    // that way it would be very simple to understand
+    SDL_RenderCopy(renderer, message, NULL, &message_rect);
 
-    // Now since it's a texture, you have to put RenderCopy
-    // in your game loop area, the area where the whole code executes
-
-    // you put the renderer's name first, the Message,
-    // the crop size (you can ignore this if you don't want
-    // to dabble with cropping), and the rect which is the size
-    // and coordinate of your texture
-    SDL_RenderCopy(renderer, message, NULL, &Message_rect);
-
-    while (1) {
+    struct input_handl_ctx input = {0};
+    bool should_exit = false;
+    while (!should_exit) {
         SDL_Event event = (SDL_Event){0};
-        SDL_PollEvent(&event);
-        if (event.type == SDL_QUIT)
-            break;
-        if (event.type == SDL_USEREVENT && (intptr_t)event.user.data1 == 10)
-            break;
+        while (SDL_PollEvent(&event)) {
+            handle_input(&input, &event);
+            if (event.type == SDL_QUIT || is_exit_state(&input))
+                should_exit = true;
 
-        bake_event(renderer, font, &surfaceMessage, &message, &event);
-        Message_rect.w = surfaceMessage->w;
-        Message_rect.h = surfaceMessage->h;
+            bake_event(renderer, font, &message_surface, &message, &event);
+            message_rect.w = message_surface->w;
+            message_rect.h = message_surface->h;
+
+            // Restart timeout exit timer
+            SDL_RemoveTimer(my_timer_id);
+            my_timer_id = SDL_AddTimer(delay_ms, exit_timer_cb, NULL);
+        }
 
         SDL_Delay(10);
         SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
         SDL_RenderClear(renderer);
-        SDL_RenderFillRect(renderer, &Message_rect);
-        SDL_RenderCopy(renderer, message, NULL, &Message_rect);
+        SDL_RenderFillRect(renderer, &message_rect);
+        SDL_RenderCopy(renderer, message, NULL, &message_rect);
         SDL_RenderPresent(renderer);
     }
 
-    // Don't forget to free your surface and texture
-    SDL_FreeSurface(surfaceMessage);
+    SDL_FreeSurface(message_surface);
     SDL_DestroyTexture(message);
-
+    TTF_CloseFont(font);
     SDL_JoystickClose(joystick);
-
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
