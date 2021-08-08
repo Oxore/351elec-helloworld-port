@@ -63,10 +63,10 @@ Find "Demo App" in a list of ports on 351elec system. When it run a turquoise sc
 - [X] Link with SDL2
 - [X] Make it use SDL2 to write "Hello, world!" on the screen
 - [ ] Play sound
-- [ ] Move a sprite around by pressing cross buttons and touching L2/L3 sticks
-- [ ] Rotate vibration motor by pressing A
-- [ ] Display picture with controls mapping and light up correspongin buttons
-- [ ] Create a package that is able to be installed in 351ELEC system
+- [ ] Move a sprite around by pressing d-pad buttons and touching L3/R3 sticks
+- [ ] Rumble (rotate the vibration motor) by pressing A
+- [X] Display picture with controls mapping and light up corresponding buttons
+- [ ] Create a package that is able to be installed into 351ELEC system
 
 ## Notes
 
