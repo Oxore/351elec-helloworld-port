@@ -10,7 +10,7 @@ COMMON_COMPILE_FLAGS=$(shell $(SDL2_CONFIG) --cflags) -Wall -Wextra -ggdb
 CFLAGS=$(COMMON_COMPILE_FLAGS)
 CXXFLAGS=$(COMMON_COMPILE_FLAGS)
 
-LDFAGS=$(shell $(SDL2_CONFIG) --libs) -lSDL2_ttf
+LDFAGS=$(shell $(SDL2_CONFIG) --libs) -lSDL2_ttf -lSDL2_image
 
 main: main.o
 	$(CXX) $(LDFAGS) $^ -o $@
