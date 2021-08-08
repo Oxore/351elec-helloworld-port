@@ -19,6 +19,11 @@
 // SDL_JOYAXISMOTION(0x600) created when L3 or R3 stick tilted.
 // - Tilt value is int16 and may be acquired from jaxis.value.
 // - Axis ID may be acquired from jaxis.axis.
+//
+// SDL_KEYDOWN(0x300) and SDL_KEYUP(0x301).
+// - Created when computer keyboard key is pressed/released
+// - Key ID may be acquired from key.keysym.sym (SDL_Keycode).
+// - Key scancode may be acquired from key.keysym.scancode (SDL_Scancode).
 
 #define SCREEN_WIDTH 480
 #define SCREEN_HEIGHT 320
@@ -156,8 +161,6 @@ int main(int argc, char * const argv[])
         .w = message_surface->w, // width of the rect
         .h = message_surface->h, // height of the rect
     };
-
-    SDL_RenderCopy(renderer, message, NULL, &message_rect);
 
     struct input_handl_ctx input = {0};
     bool should_exit = false;
