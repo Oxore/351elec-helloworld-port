@@ -215,17 +215,20 @@ void bake_event(
         SDL_Texture** texture,
         const SDL_Event* event)
 {
+    if (event->type == SDL_TEXTINPUT || event->type == SDL_TEXTEDITING)
+        return; // Ignore text input events
+
     char text[100] = {0};
     int size = snprintf(text, sizeof(text), "type=0x%" PRIX32, event->type);
 
-    if (size >= 0 && (size_t)size <= sizeof(text))
-    {
+    if (size >= 0 && (size_t)size <= sizeof(text)) {
         if (event->type == SDL_JOYHATMOTION)
         {
             snprintf(
                     text + size,
                     sizeof(text) - size,
-                    " d-pad button=0x%" PRIX8, event->jhat.value);
+                    " d-pad button=0x%" PRIX8,
+                    event->jhat.value);
         }
         else if (event->type == SDL_JOYAXISMOTION)
         {
@@ -236,12 +239,42 @@ void bake_event(
                     event->jaxis.axis,
                     event->jaxis.value);
         }
-        else if (event->type == SDL_JOYBUTTONDOWN || event->type == SDL_JOYBUTTONUP)
+        else if (event->type == SDL_JOYBUTTONDOWN ||
+                event->type == SDL_JOYBUTTONUP)
         {
             snprintf(
                     text + size,
                     sizeof(text) - size,
-                    " button=0x%" PRIX8, event->jbutton.button);
+                    " button=0x%" PRIX8,
+                    event->jbutton.button);
+        }
+        else if (event->type == SDL_KEYDOWN || event->type == SDL_KEYUP)
+        {
+            snprintf(
+                    text + size,
+                    sizeof(text) - size,
+                    " keysym=0x%" PRIX32,
+                    event->key.keysym.sym);
+        }
+        else if (event->type == SDL_MOUSEBUTTONDOWN ||
+                event->type == SDL_MOUSEBUTTONUP)
+        {
+            snprintf(
+                    text + size,
+                    sizeof(text) - size,
+                    " x=%" PRIi32 ",y=%" PRIi32 ",button=0x%" PRIX8,
+                    event->button.x,
+                    event->button.y,
+                    event->button.button);
+        }
+        else if (event->type == SDL_MOUSEMOTION)
+        {
+            snprintf(
+                    text + size,
+                    sizeof(text) - size,
+                    " x=%" PRIi32 ",y=%" PRIi32 "",
+                    event->button.x,
+                    event->button.y);
         }
     }
     SDL_FreeSurface(*surface);
