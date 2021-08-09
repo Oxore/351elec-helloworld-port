@@ -81,7 +81,7 @@ Find "Demo App" in a list of ports on 351ELEC system. A screen with sprites of b
 - [X] Link with SDL2
 - [X] Make it use SDL2 to write "Hello, world!" on the screen
 - [ ] Play sound
-- [ ] Rumble (rotate the vibration motor) by pressing A
+- [X] Rumble (rotate the vibration motor) by pressing A
 - [X] Display picture with controls mapping and light up corresponding buttons
 - [ ] Create a package that is able to be installed into 351ELEC system
 

@@ -32,15 +32,17 @@
 // this is the color in rgb format,
 // maxing out all would give you the color white,
 // and it will be your text's color
-const SDL_Color black = {0, 0, 0, 0};
+const SDL_Color text_color = {0, 0, 0, 0};
 
 struct input_handl_ctx {
+    bool a;
     bool l3;
     bool r3;
     bool dpad_right;
     bool dpad_up;
     bool dpad_down;
     bool dpad_left;
+    unsigned long rumble_pwm;
 };
 
 static inline void handle_input(
@@ -52,6 +54,8 @@ static inline void handle_input(
             in->l3 = pressed;
         else if (event->jbutton.button == 0x09)
             in->r3 = pressed;
+        else if (event->jbutton.button == 0x00)
+            in->a = pressed;
     }
 
     if (event->type == SDL_JOYHATMOTION) {
@@ -60,6 +64,32 @@ static inline void handle_input(
         in->dpad_down = event->jhat.value & SDL_HAT_DOWN;
         in->dpad_left = event->jhat.value & SDL_HAT_LEFT;
     }
+
+    if (event->type == SDL_JOYAXISMOTION) {
+        in->rumble_pwm = ((uint64_t)abs(event->jaxis.value) * 1000000) / 32768;
+    }
+}
+
+static void rumble_apply(unsigned long pwm_duty_cycle)
+{
+   FILE *fp = fopen("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", "w");
+   if (fp) {
+       fprintf(fp, "%lu", pwm_duty_cycle);
+       fclose(fp);
+   }
+}
+
+static void rumble_deactivate(void)
+{
+    rumble_apply(1000000);
+}
+
+static void handle_rumble_state(const struct input_handl_ctx* in)
+{
+    if (in->a)
+        rumble_apply(in->rumble_pwm);
+    else
+        rumble_deactivate();
 }
 
 static inline void handle_btn(
@@ -208,7 +238,7 @@ Uint32 exit_timer_cb(Uint32 interval, void *param)
     return interval;
 }
 
-void bake_event(
+void print_event(
         SDL_Renderer* renderer,
         TTF_Font* font,
         SDL_Surface** surface,
@@ -219,7 +249,7 @@ void bake_event(
         return; // Ignore text input events
 
     char text[100] = {0};
-    int size = snprintf(text, sizeof(text), "type=0x%" PRIX32, event->type);
+    int size = snprintf(text, sizeof(text), "event=0x%" PRIX32, event->type);
 
     if (size >= 0 && (size_t)size <= sizeof(text)) {
         if (event->type == SDL_JOYHATMOTION)
@@ -279,7 +309,23 @@ void bake_event(
     }
     SDL_FreeSurface(*surface);
     SDL_DestroyTexture(*texture);
-    *surface = TTF_RenderText_Solid(font, text, black);
+    *surface = TTF_RenderText_Solid(font, text, text_color);
+    *texture = SDL_CreateTextureFromSurface(renderer, *surface);
+}
+
+void print_rumble(
+        SDL_Renderer* renderer,
+        TTF_Font* font,
+        SDL_Surface** surface,
+        SDL_Texture** texture,
+        const struct input_handl_ctx* in)
+{
+    char text[100] = {0};
+    snprintf(text, sizeof(text), "rumble_pwm=%lu", in->rumble_pwm);
+
+    SDL_FreeSurface(*surface);
+    SDL_DestroyTexture(*texture);
+    *surface = TTF_RenderText_Solid(font, text, text_color);
     *texture = SDL_CreateTextureFromSurface(renderer, *surface);
 }
 
@@ -319,19 +365,32 @@ int main(int argc, char * const argv[])
 
     // As TTF_RenderText_Solid could only be used on
     // SDL_Surface then you have to create the surface first
-    SDL_Surface* message_surface =
-        TTF_RenderText_Solid(font, "Hello, world!", black);
+    SDL_Surface* event_log_surface =
+        TTF_RenderText_Solid(font, "Hello, world!", text_color);
 
     // Convert the surface into a texture
-    SDL_Texture* message =
-        SDL_CreateTextureFromSurface(renderer, message_surface);
+    SDL_Texture* event_log =
+        SDL_CreateTextureFromSurface(renderer, event_log_surface);
 
     // SDL_Rect is just a dimension parameter aggregation for render operation
-    SDL_Rect message_rect = {
+    SDL_Rect event_log_rect = {
+        .x = 100,
+        .y = 25,
+        .w = event_log_surface->w, // width of the rect
+        .h = event_log_surface->h, // height of the rect
+    };
+
+    SDL_Surface* rumble_log_surface =
+        TTF_RenderText_Solid(font, "rumble_pwm=0", text_color);
+
+    SDL_Texture* rumble_log =
+        SDL_CreateTextureFromSurface(renderer, rumble_log_surface);
+
+    SDL_Rect rumble_log_rect = {
         .x = 100,
         .y = 50,
-        .w = message_surface->w, // width of the rect
-        .h = message_surface->h, // height of the rect
+        .w = rumble_log_surface->w, // width of the rect
+        .h = rumble_log_surface->h, // height of the rect
     };
 
     // Open the sprite atlas
@@ -457,9 +516,16 @@ int main(int argc, char * const argv[])
             if (event.type == SDL_QUIT || is_exit_state(&input))
                 should_exit = true;
 
-            bake_event(renderer, font, &message_surface, &message, &event);
-            message_rect.w = message_surface->w;
-            message_rect.h = message_surface->h;
+            handle_rumble_state(&input);
+
+            print_event(renderer, font, &event_log_surface, &event_log, &event);
+            event_log_rect.w = event_log_surface->w;
+            event_log_rect.h = event_log_surface->h;
+
+            print_rumble(
+                    renderer, font, &rumble_log_surface, &rumble_log, &input);
+            rumble_log_rect.w = rumble_log_surface->w;
+            rumble_log_rect.h = rumble_log_surface->h;
 
             // Restart timeout exit timer
             SDL_RemoveTimer(my_timer_id);
@@ -469,7 +535,8 @@ int main(int argc, char * const argv[])
         SDL_Delay(10);
         SDL_SetRenderDrawColor(renderer, 0x45, 0x45, 0x45, 0x00);
         SDL_RenderClear(renderer);
-        SDL_RenderFillRect(renderer, &message_rect);
+        SDL_RenderFillRect(renderer, &event_log_rect);
+        SDL_RenderFillRect(renderer, &rumble_log_rect);
         SDL_RenderFillRect(renderer, &btn_a_dst);
         SDL_RenderFillRect(renderer, &btn_b_dst);
         SDL_RenderFillRect(renderer, &btn_x_dst);
@@ -477,7 +544,8 @@ int main(int argc, char * const argv[])
         SDL_RenderFillRect(renderer, &btn_start_dst);
         SDL_RenderFillRect(renderer, &btn_select_dst);
         SDL_RenderFillRect(renderer, &btn_dpad_dst);
-        SDL_RenderCopy(renderer, message, NULL, &message_rect);
+        SDL_RenderCopy(renderer, event_log, NULL, &event_log_rect);
+        SDL_RenderCopy(renderer, rumble_log, NULL, &rumble_log_rect);
         SDL_RenderCopy(renderer, atlas, &btn_a_src, &btn_a_dst);
         SDL_RenderCopy(renderer, atlas, &btn_b_src, &btn_b_dst);
         SDL_RenderCopy(renderer, atlas, &btn_x_src, &btn_x_dst);
@@ -506,8 +574,8 @@ int main(int argc, char * const argv[])
         SDL_RenderPresent(renderer);
     }
 
-    SDL_FreeSurface(message_surface);
-    SDL_DestroyTexture(message);
+    SDL_FreeSurface(event_log_surface);
+    SDL_DestroyTexture(event_log);
     TTF_CloseFont(font);
     SDL_JoystickClose(joystick);
     SDL_DestroyWindow(window);
